@@ -194,7 +194,7 @@ The project includes multiple init script variants:
 
 ## Author
 
-**Rehan Mujawar** — [rehanmujawarofficial007@gmail.com](mailto:rehanmujawarofficial007@gmail.com)
+**Rehan Mujawar** — [rehan.learning@hotmail.com](mailto:rehan.learning@hotmail.com)
 
 ## License
 
