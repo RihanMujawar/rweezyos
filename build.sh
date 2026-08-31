@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 
@@ -12,11 +12,71 @@ INITRAMFS_BUILD="$ROOT/initramfs-build"
 
 BUILD="$ROOT/build"
 
+bootstrap_linux() {
+  if [ -f "$KERNEL/Makefile" ]; then
+    return 0
+  fi
+
+  mkdir -p "$ROOT/src"
+  local tarball="$ROOT/src/linux-7.2.tar.xz"
+  echo "[bootstrap] Downloading Linux 7.2 source..."
+  curl -fL --retry 3 -o "$tarball" https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.tar.xz
+
+  rm -rf "$KERNEL"
+  tar -xf "$tarball" -C "$ROOT/src"
+  local extracted="$(tar -tf "$tarball" | head -n 1 | cut -d/ -f1)"
+  mv "$ROOT/src/$extracted" "$KERNEL"
+
+  if [ -f "$ROOT/kernel/rweezy.config" ]; then
+    cp "$ROOT/kernel/rweezy.config" "$KERNEL/.config"
+  fi
+
+  if [ -f "$ROOT/kernel/rweezy.patch" ]; then
+    if ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null; then
+      patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
+    fi
+  fi
+
+  if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
+    cp "$ROOT/src/linux/localversion-rweezy" "$KERNEL/localversion-rweezy"
+  fi
+}
+
+bootstrap_busybox() {
+  if [ -f "$BUSYBOX/Makefile" ]; then
+    return 0
+  fi
+
+  mkdir -p "$ROOT/src"
+  local tarball="$ROOT/src/busybox-1.38.0.tar.bz2"
+  echo "[bootstrap] Downloading BusyBox 1.38.0 source..."
+  curl -fL --retry 3 -o "$tarball" https://busybox.net/downloads/busybox-1.38.0.tar.bz2
+
+  rm -rf "$BUSYBOX"
+  tar -xf "$tarball" -C "$ROOT/src"
+  local extracted="$(tar -tjf "$tarball" | head -n 1 | cut -d/ -f1)"
+  mv "$ROOT/src/$extracted" "$BUSYBOX"
+
+  (cd "$BUSYBOX" && make defconfig >/dev/null)
+  if [ -f "$BUSYBOX/scripts/config" ]; then
+    (cd "$BUSYBOX" && scripts/config --enable STATIC >/dev/null)
+  else
+    sed -i 's/^# CONFIG_STATIC is not set$/CONFIG_STATIC=y/' "$BUSYBOX/.config"
+  fi
+  (cd "$BUSYBOX" && make oldconfig >/dev/null 2>&1 || true)
+}
+
 echo "================================"
 echo "       Rweezy Build System"
 echo "================================"
 
 mkdir -p "$BUILD"
+bootstrap_linux
+bootstrap_busybox
+
+if [ ! -d "$ROOTFS" ]; then
+  mkdir -p "$ROOTFS"
+fi
 
 echo
 echo "[1/5] Building Linux kernel..."
@@ -31,7 +91,6 @@ make -j"$(nproc)"
 
 echo
 echo "[3/5] Preparing root filesystem..."
-
 make CONFIG_PREFIX="$ROOTFS" install
 
 echo
@@ -65,7 +124,7 @@ echo "[5/5] Creating initramfs..."
 cd "$INITRAMFS_BUILD"
 
 find . -print0 | cpio --null -ov --format=newc | gzip -9 > "$BUILD/initramfs.cpio.gz"
-	
+
 echo
 echo "================================"
 echo "       Build complete!"
