@@ -12,15 +12,48 @@ INITRAMFS_BUILD="$ROOT/initramfs-build"
 
 BUILD="$ROOT/build"
 
+download_with_fallback() {
+  local output_path="$1"
+  shift
+
+  rm -f "$output_path"
+
+  local url
+  for url in "$@"; do
+    echo "[download] Trying $url"
+    if curl -fL --retry 3 --retry-all-errors --retry-delay 2 \
+      --connect-timeout 20 --max-time 600 --http1.1 \
+      --proto '=https' --tlsv1.2 -o "$output_path" "$url"; then
+      return 0
+    fi
+    rm -f "$output_path"
+  done
+
+  echo "[download] ERROR: failed to download from all configured URLs" >&2
+  return 1
+}
+
 bootstrap_linux() {
   if [ -f "$KERNEL/Makefile" ]; then
+    if [ -f "$ROOT/kernel/rweezy.patch" ] && \
+      { ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
+        ! grep -q "rweezy.o" "$KERNEL/fs/proc/Makefile" 2>/dev/null || \
+        [ ! -f "$KERNEL/fs/proc/rweezy.c" ]; }; then
+      patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
+    fi
+
+    if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
+      cp "$ROOT/src/linux/localversion-rweezy" "$KERNEL/localversion-rweezy"
+    fi
     return 0
   fi
 
   mkdir -p "$ROOT/src"
   local tarball="$ROOT/src/linux-7.2.tar.xz"
   echo "[bootstrap] Downloading Linux 7.2 source..."
-  curl -fL --retry 3 -o "$tarball" https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.tar.xz
+  download_with_fallback "$tarball" \
+    "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.tar.xz" \
+    "https://mirrors.edge.kernel.org/pub/linux/kernel/v7.x/linux-7.2.tar.xz"
 
   rm -rf "$KERNEL"
   tar -xf "$tarball" -C "$ROOT/src"
@@ -32,9 +65,7 @@ bootstrap_linux() {
   fi
 
   if [ -f "$ROOT/kernel/rweezy.patch" ]; then
-    if ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null; then
-      patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
-    fi
+    patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
   fi
 
   if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
@@ -50,7 +81,9 @@ bootstrap_busybox() {
   mkdir -p "$ROOT/src"
   local tarball="$ROOT/src/busybox-1.38.0.tar.bz2"
   echo "[bootstrap] Downloading BusyBox 1.38.0 source..."
-  curl -fL --retry 3 -o "$tarball" https://busybox.net/downloads/busybox-1.38.0.tar.bz2
+  download_with_fallback "$tarball" \
+    "https://busybox.net/downloads/busybox-1.38.0.tar.bz2" \
+    "https://www.busybox.net/downloads/busybox-1.38.0.tar.bz2"
 
   rm -rf "$BUSYBOX"
   tar -xf "$tarball" -C "$ROOT/src"
