@@ -35,6 +35,15 @@ download_with_fallback() {
 
 bootstrap_linux() {
   if [ -f "$KERNEL/Makefile" ]; then
+    if [ -f "$KERNEL/fs/proc/Makefile.orig" ] && [ -f "$KERNEL/fs/proc/Kconfig.orig" ] && \
+      { grep -q "Rweezy OS" "$KERNEL/fs/proc/Makefile" 2>/dev/null || \
+        grep -q "config RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
+        [ -f "$KERNEL/fs/proc/Makefile.rej" ]; }; then
+      cp "$KERNEL/fs/proc/Makefile.orig" "$KERNEL/fs/proc/Makefile"
+      cp "$KERNEL/fs/proc/Kconfig.orig" "$KERNEL/fs/proc/Kconfig"
+      rm -f "$KERNEL/fs/proc/Makefile.rej" "$KERNEL/fs/proc/rweezy.c"
+    fi
+
     if [ -f "$ROOT/kernel/rweezy.patch" ] && \
       { ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
         ! grep -q "rweezy.o" "$KERNEL/fs/proc/Makefile" 2>/dev/null || \
