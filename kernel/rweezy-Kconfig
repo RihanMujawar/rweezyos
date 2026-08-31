@@ -1,0 +1,7 @@
+config RWEEZY
+	bool "Rweezy OS identity interface"
+	default y
+	help
+	  Creates the read-only /proc/rweezy entry which exposes the
+	  Rweezy OS identity, kernel version, ABI version and build
+	  string.
