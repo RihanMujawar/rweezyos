@@ -1,0 +1,43 @@
+```sh
+#!/bin/sh
+
+echo
+echo "================================"
+echo "        Welcome to Rweezy"
+echo "================================"
+echo
+echo "Starting Rweezy..."
+echo
+
+# Temporary filesystems
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+mkdir -p /newroot
+
+echo "Mounting real root filesystem..."
+
+# Wait briefly for virtio disk
+sleep 1
+
+mount -t ext4 /dev/vda /newroot
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Could not mount /dev/vda"
+    echo "Dropping to emergency shell."
+    exec setsid cttyhack /bin/sh
+fi
+
+echo "Root filesystem mounted."
+echo "Switching to real Rweezy..."
+
+# Move required virtual filesystems into the new root
+mount --move /proc /newroot/proc
+mount --move /sys /newroot/sys
+mount --move /dev /newroot/dev
+
+# Start the real root's /init
+exec switch_root /newroot /init
+```
+

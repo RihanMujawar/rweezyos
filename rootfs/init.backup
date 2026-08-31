@@ -1,0 +1,25 @@
+#!/bin/sh
+
+echo
+echo "================================"
+echo "        Welcome to Rweezy"
+echo "================================"
+echo
+echo "Kernel booted successfully!"
+echo
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+if ip link show eth0 >/dev/null 2>&1; then
+    echo "Starting network..."
+    ip link set eth0 up
+    udhcpc -i eth0
+fi
+
+echo
+echo "Starting Rweezy shell..."
+echo
+
+exec setsid cttyhack /bin/sh

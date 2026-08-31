@@ -1,0 +1,29 @@
+#!/bin/sh
+
+echo
+echo "================================"
+echo "        Welcome to Rweezy"
+echo "================================"
+echo
+echo "Starting real root filesystem..."
+echo
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+
+echo "Waiting for root disk..."
+
+# Give the virtio block device a moment to appear.
+sleep 1
+
+mount -t ext4 /dev/vda /newroot
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Could not mount /dev/vda"
+    exec setsid cttyhack /bin/sh
+fi
+
+echo "Real root filesystem mounted."
+
+exec switch_root /newroot /init

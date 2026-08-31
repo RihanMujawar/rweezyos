@@ -1,0 +1,35 @@
+# Build artifacts
+build/
+
+# Generated initramfs staging tree
+initramfs-build/
+
+# Stale generated busybox binary inside initramfs source (build.sh copies from rootfs)
+initramfs/bin/
+
+# Disk images
+disk/*.img
+
+# Upstream source trees (own VCS tracked there).
+# The Rweezy kernel customizations committed under src/linux/ remain tracked
+# even though src/ is ignored (git keeps already-tracked files).
+src/
+
+# BusyBox install output (generated symlink farm) in rootfs
+rootfs/bin/
+rootfs/sbin/
+rootfs/usr/
+rootfs/linuxrc
+
+# Empty runtime/virtual mountpoint dirs (created at boot)
+rootfs/proc/
+rootfs/sys/
+rootfs/dev/
+rootfs/tmp/
+rootfs/run/
+rootfs/var/
+
+# Misc
+*.o
+*.swp
+*~
