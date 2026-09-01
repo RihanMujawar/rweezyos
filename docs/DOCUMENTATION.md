@@ -37,36 +37,36 @@ The target platform is **x86_64 KVM/QEMU virtual machines**. The system boots fr
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    Rweezy OS                         │
+│                    Rweezy OS                        │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │              Linux Kernel 7.2.0               │   │
+│  │              Linux Kernel 7.2.0              │   │
 │  │  • x86_64, KVM guest optimized               │   │
-│  │  • /proc/rweezy identity interface            │   │
-│  │  • Virtio drivers (block, net, SCSI)          │   │
-│  │  • ext4, networking, modules                   │   │
+│  │  • /proc/rweezy identity interface           │   │
+│  │  • Virtio drivers (block, net, SCSI)         │   │
+│  │  • ext4, networking, modules                 │   │
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │          BusyBox 1.39.0 Userspace             │   │
-│  │  • Statically linked (~408 applets)           │   │
-│  │  • /bin/sh (ash shell)                        │   │
-│  │  • Core utilities (ls, cat, cp, mv, etc.)     │   │
-│  │  • Networking (ip, udhcpc, wget)              │   │
-│  │  • init, switch_root, mount                   │   │
+│  │          BusyBox 1.39.0 Userspace            │   │
+│  │  • Statically linked (~408 applets)          │   │
+│  │  • /bin/sh (ash shell)                       │   │
+│  │  • Core utilities (ls, cat, cp, mv, etc.)    │   │
+│  │  • Networking (ip, udhcpc, wget)             │   │
+│  │  • init, switch_root, mount                  │   │
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │           Custom Init Scripts                 │   │
-│  │  • initramfs/init (stage 1)                   │   │
-│  │  • rootfs/init (stage 2)                      │   │
-│  │  • DHCP handler (udhcpc default.script)       │   │
+│  │           Custom Init Scripts                │   │
+│  │  • initramfs/init (stage 1)                  │   │
+│  │  • rootfs/init (stage 2)                     │   │
+│  │  • DHCP handler (udhcpc default.script)      │   │
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │         ext4 Root Filesystem                  │   │
-│  │  • /dev/vda (virtio block device)             │   │
+│  │         ext4 Root Filesystem                 │   │
+│  │  • /dev/vda (virtio block device)            │   │
 │  │  • 512 MB, volume label "RWEEZY"             │   │
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
