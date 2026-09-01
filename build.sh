@@ -48,7 +48,18 @@ bootstrap_linux() {
       { ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
         ! grep -q "rweezy.o" "$KERNEL/fs/proc/Makefile" 2>/dev/null || \
         [ ! -f "$KERNEL/fs/proc/rweezy.c" ]; }; then
-      patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
+      patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch" || \
+      echo "[bootstrap] WARNING: Patch application failed, continuing with manual adjustments..."
+      
+      # Ensure rweezy.c exists
+      if [ ! -f "$KERNEL/fs/proc/rweezy.c" ] && [ -f "$ROOT/kernel/rweezy.c" ]; then
+        cp "$ROOT/kernel/rweezy.c" "$KERNEL/fs/proc/rweezy.c"
+      fi
+      
+      # Ensure Makefile has rweezy.o entry
+      if ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Makefile" 2>/dev/null; then
+        echo 'proc-$(CONFIG_RWEEZY)	+= rweezy.o' >> "$KERNEL/fs/proc/Makefile"
+      fi
     fi
 
     if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
@@ -74,7 +85,18 @@ bootstrap_linux() {
   fi
 
   if [ -f "$ROOT/kernel/rweezy.patch" ]; then
-    patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch"
+    patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch" || \
+    echo "[bootstrap] WARNING: Patch application failed, continuing with manual adjustments..."
+    
+    # Ensure rweezy.c exists
+    if [ ! -f "$KERNEL/fs/proc/rweezy.c" ] && [ -f "$ROOT/kernel/rweezy.c" ]; then
+      cp "$ROOT/kernel/rweezy.c" "$KERNEL/fs/proc/rweezy.c"
+    fi
+    
+    # Ensure Makefile has rweezy.o entry
+    if ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Makefile" 2>/dev/null; then
+      echo 'proc-$(CONFIG_RWEEZY)	+= rweezy.o' >> "$KERNEL/fs/proc/Makefile"
+    fi
   fi
 
   if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
