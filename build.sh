@@ -45,7 +45,7 @@ bootstrap_linux() {
     fi
 
     if [ -f "$ROOT/kernel/rweezy.patch" ] && \
-      { ! grep -q "CONFIG_RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
+      { ! grep -q "^config RWEEZY\|^menuconfig RWEEZY" "$KERNEL/fs/proc/Kconfig" 2>/dev/null || \
         ! grep -q "rweezy.o" "$KERNEL/fs/proc/Makefile" 2>/dev/null || \
         [ ! -f "$KERNEL/fs/proc/rweezy.c" ]; }; then
       patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch" || \
@@ -65,6 +65,9 @@ bootstrap_linux() {
     if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
       cp "$ROOT/src/linux/localversion-rweezy" "$KERNEL/localversion-rweezy"
     fi
+    if [ -f "$KERNEL/.config" ]; then
+      (cd "$KERNEL" && make olddefconfig)
+    fi
     return 0
   fi
 
@@ -82,6 +85,7 @@ bootstrap_linux() {
 
   if [ -f "$ROOT/kernel/rweezy.config" ]; then
     cp "$ROOT/kernel/rweezy.config" "$KERNEL/.config"
+    (cd "$KERNEL" && make olddefconfig)
   fi
 
   if [ -f "$ROOT/kernel/rweezy.patch" ]; then
