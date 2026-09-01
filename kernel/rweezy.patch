@@ -16,7 +16,7 @@ and is applied automatically by the kernel build.
 
 --- a/fs/proc/Kconfig
 +++ b/fs/proc/Kconfig
-@@ -539,3 +539,12 @@ config PROC_CPU_RESCTRL
+@@ -127,3 +127,12 @@ config PROC_CPU_RESCTRL
  config PROC_CPU_RESCTRL
  	def_bool n
  	depends on PROC_FS
@@ -31,13 +31,14 @@ and is applied automatically by the kernel build.
 +
 --- a/fs/proc/Makefile
 +++ b/fs/proc/Makefile
-@@ -39,3 +39,4 @@ proc-$(CONFIG_PRINTK)	+= kmsg.o
+@@ -36,3 +36,4 @@
+ proc-$(CONFIG_PRINTK)	+= kmsg.o
  proc-$(CONFIG_PROC_PAGE_MONITOR)	+= page.o
  proc-$(CONFIG_BOOT_CONFIG)	+= bootconfig.o
 +proc-$(CONFIG_RWEEZY)	+= rweezy.o
 --- /dev/null
 +++ b/fs/proc/rweezy.c
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,51 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Rweezy OS -- kernel identity interface.
@@ -47,6 +48,7 @@ and is applied automatically by the kernel build.
 + * kernel build string.
 + */
 +
++#include <linux/init.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/proc_fs.h>
@@ -62,7 +64,7 @@ and is applied automatically by the kernel build.
 +	seq_printf(m, "Kernel: %s\n", init_utsname()->release);
 +	seq_printf(m, "Rweezy ABI: %d\n", RWEEZY_ABI_VERSION);
 +	seq_printf(m, "Build: %s %s\n", init_utsname()->version,
-+		   init_utsname()->machine);
++	 	   init_utsname()->machine);
 +	return 0;
 +}
 +
@@ -84,7 +86,7 @@ and is applied automatically by the kernel build.
 +	return 0;
 +}
 +
-+module_init(rweezy_init);
++fs_initcall(rweezy_init);
 +
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Rweezy OS kernel identity interface");

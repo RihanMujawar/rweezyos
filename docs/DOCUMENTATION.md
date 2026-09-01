@@ -83,11 +83,12 @@ The entire build is orchestrated by a single script: `build.sh`.
 
 | Step | Action | Output |
 |------|--------|--------|
-| 1/5 | Compile Linux kernel with `make -j$(nproc)` | `build/vmlinuz` (bzImage) |
-| 2/5 | Compile BusyBox with `make -j$(nproc)` | `src/busybox/busybox` |
-| 3/5 | Install BusyBox into rootfs | `rootfs/bin/`, `rootfs/sbin/`, `rootfs/usr/` |
-| 4/5 | Prepare initramfs staging tree | `initramfs-build/` with busybox + symlinks |
-| 5/5 | Create compressed initramfs archive | `build/initramfs.cpio.gz` |
+| 1/6 | Compile Linux kernel with `make -j$(nproc)` | `build/vmlinuz` (bzImage) |
+| 2/6 | Compile BusyBox with `make -j$(nproc)` | `src/busybox/busybox` |
+| 3/6 | Install BusyBox into rootfs | `rootfs/bin/`, `rootfs/sbin/`, `rootfs/usr/` |
+| 4/6 | Prepare initramfs staging tree | `initramfs-build/` with busybox + symlinks |
+| 5/6 | Create compressed initramfs archive | `build/initramfs.cpio.gz` |
+| 6/6 | Create and populate ext4 disk image | `disk/rweezy.img` |
 
 ### Build Variables
 
