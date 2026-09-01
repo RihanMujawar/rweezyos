@@ -25,7 +25,7 @@
 Rweezy OS is an independent, minimal Linux distribution built entirely from source. It is designed as an educational and hobbyist project that demonstrates how a complete Linux operating system is assembled from its core components:
 
 - A custom-compiled **Linux kernel** (7.2.0) with Rweezy-specific modifications
-- **BusyBox** (1.39.0) providing the entire userspace (shell, coreutils, init, networking tools)
+- **BusyBox** (1.38.0) providing the entire userspace (shell, coreutils, init, networking tools)
 - A hand-crafted **two-stage boot process** using initramfs and `switch_root`
 - A custom **kernel identity interface** at `/proc/rweezy`
 
@@ -49,7 +49,7 @@ The target platform is **x86_64 KVM/QEMU virtual machines**. The system boots fr
 │  └──────────────────────────────────────────────┘   │
 │                                                     │
 │  ┌──────────────────────────────────────────────┐   │
-│  │          BusyBox 1.39.0 Userspace             │   │
+│  │          BusyBox 1.38.0 Userspace             │   │
 │  │  • Statically linked (~408 applets)           │   │
 │  │  • /bin/sh (ash shell)                        │   │
 │  │  • Core utilities (ls, cat, cp, mv, etc.)     │   │
@@ -83,11 +83,16 @@ The entire build is orchestrated by a single script: `build.sh`.
 
 | Step | Action | Output |
 |------|--------|--------|
-| 1/5 | Compile Linux kernel with `make -j$(nproc)` | `build/vmlinuz` (bzImage) |
-| 2/5 | Compile BusyBox with `make -j$(nproc)` | `src/busybox/busybox` |
-| 3/5 | Install BusyBox into rootfs | `rootfs/bin/`, `rootfs/sbin/`, `rootfs/usr/` |
-| 4/5 | Prepare initramfs staging tree | `initramfs-build/` with busybox + symlinks |
-| 5/5 | Create compressed initramfs archive | `build/initramfs.cpio.gz` |
+| 1/6 | Compile Linux kernel with `make -j$(nproc)` | `build/vmlinuz` (bzImage) |
+| 2/6 | Compile BusyBox with `make -j$(nproc)` | `src/busybox/busybox` |
+| 3/6 | Install BusyBox into rootfs | `rootfs/bin/`, `rootfs/sbin/`, `rootfs/usr/` |
+| 4/6 | Prepare initramfs staging tree | `initramfs-build/` with busybox + symlinks |
+| 5/6 | Create compressed initramfs archive | `build/initramfs.cpio.gz` |
+| 6/6 | Create and populate ext4 root disk | `disk/rweezy.img` (512M ext4, `debugfs`) |
+
+> **Note:** `src/busybox` is built with the `tc` applet disabled because the CBQ
+> constants it depends on (`TCA_CBQ_*`, `TC_CBQ_MAXPRIO`) were removed from
+> modern kernel UAPI headers.
 
 ### Build Variables
 
@@ -194,10 +199,11 @@ The Rweezy kernel includes the following custom additions to the upstream Linux 
 
 ### Version
 
-- **BusyBox 1.39.0**
+- **BusyBox 1.38.0**
 - **Static linking** (`CONFIG_STATIC=y`) — no shared library dependencies
 - **891 configuration options enabled**
 - **408 applet symlinks** generated
+- **`tc` applet disabled** (`CONFIG_TC=n`) — it cannot build against modern kernel headers (CBQ removed)
 
 ### Key Applets
 
@@ -456,7 +462,12 @@ esac
 - **Filesystem:** ext4
 - **Volume label:** `RWEEZY`
 
-### Creating a New Disk Image
+The disk image is **automatically generated and populated** by `build.sh` on
+every build. Step 6/6 recreates the image (`qemu-img` + `mkfs.ext4`) and loads
+the root filesystem — BusyBox binary, all applet symlinks, and `rootfs/init` as
+`/init` — into it with `debugfs` (no root/sudo required).
+
+### Creating a New Disk Image Manually
 
 ```bash
 # Create raw disk image

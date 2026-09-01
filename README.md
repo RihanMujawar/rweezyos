@@ -6,7 +6,7 @@ A minimal, from-scratch Linux distribution built from source. Rweezy OS compiles
 
 - **Custom Linux Kernel 7.2.0** with the `-rweezy` local version suffix
 - **`/proc/rweezy` kernel interface** — a read-only proc entry exposing OS identity, kernel version, ABI version, and build string
-- **BusyBox 1.39.0 userspace** — statically linked, ~408 applets (shell, coreutils, networking, init)
+- **BusyBox 1.38.0 userspace** — statically linked, ~408 applets (shell, coreutils, networking, init)
 - **Two-stage boot** — initramfs with `switch_root` into a real ext4 root filesystem
 - **Networking** — automatic DHCP via `udhcpc` with a custom DHCP event handler
 - **Emergency shell** — drops to an interactive shell if the root filesystem fails to mount
@@ -37,15 +37,16 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This runs five steps:
+This runs six steps:
 
 | Step | Description |
 |------|-------------|
-| 1/5 | Compiles the Linux kernel and copies `bzImage` to `build/vmlinuz` |
-| 2/5 | Compiles BusyBox |
-| 3/5 | Installs BusyBox into the root filesystem |
-| 4/5 | Prepares the initramfs staging tree with required symlinks |
-| 5/5 | Creates the compressed initramfs (`build/initramfs.cpio.gz`) |
+| 1/6 | Compiles the Linux kernel and copies `bzImage` to `build/vmlinuz` |
+| 2/6 | Compiles BusyBox |
+| 3/6 | Installs BusyBox into the root filesystem |
+| 4/6 | Prepares the initramfs staging tree with required symlinks |
+| 5/6 | Creates the compressed initramfs (`build/initramfs.cpio.gz`) |
+| 6/6 | Creates and populates the ext4 root disk image (`disk/rweezy.img`) |
 
 ### 3. Boot in QEMU
 
@@ -60,6 +61,9 @@ qemu-system-x86_64 \
 
 Once booted, you'll see the Rweezy welcome banner, network initialization, kernel identity info, and an interactive shell.
 
+> **Note:** The disk image is regenerated from scratch on every build so it
+> always matches the freshly built root filesystem.
+
 ## Project Structure
 
 ```
@@ -67,13 +71,18 @@ rweezy/
 ├── build.sh                 # Main build script
 ├── build/                   # Build outputs (generated)
 │   ├── vmlinuz              # Compiled kernel image
-│   └── initramfs.cpio.gz    # Compressed initramfs
+│   ├── initramfs.cpio.gz    # Compressed initramfs
+│   └── debugfs.cmds         # debugfs script used to populate the disk image
 ├── disk/
-│   └── rweezy.img           # 512 MB ext4 bootable disk image
+│   └── rweezy.img           # 512 MB ext4 root disk image (regenerated per build)
 ├── initramfs/
 │   └── init                 # Initramfs init script (switch_root)
+├── initramfs-build/         # Initramfs staging tree (generated)
 ├── kernel/
-│   └── rweezy.config        # Saved kernel .config
+│   ├── rweezy.config        # Saved kernel .config
+│   ├── rweezy.patch         # Kernel patch (Kconfig + rweezy.c)
+│   ├── rweezy-Kconfig       # Standalone RWEEZY Kconfig snippet
+│   └── rweezy.c             # /proc/rweezy kernel module source
 ├── rootfs/
 │   ├── init                 # Root filesystem init (networking + shell)
 │   ├── init.backup          # Alternate init variant
@@ -84,7 +93,7 @@ rweezy/
 │       └── default.script   # DHCP event handler script
 └── src/
     ├── linux/               # Linux kernel 7.2.0 source (with Rweezy patches)
-    └── busybox/             # BusyBox 1.39.0 source
+    └── busybox/             # BusyBox 1.38.0 source
 ```
 
 ## Boot Process
@@ -141,7 +150,12 @@ qemu-system-x86_64 \
 
 ## Disk Image
 
-A pre-built 512 MB ext4 disk image is located at `disk/rweezy.img` with volume label `RWEEZY`. To recreate it:
+`build.sh` automatically creates a 512 MB ext4 disk image at `disk/rweezy.img`
+(label `RWEEZY`) and populates it with the BusyBox binary, its applet symlinks,
+and the `rootfs/init` script using `debugfs` — no root access required. The
+image is rebuilt from scratch on every build.
+
+To create/format it manually instead:
 
 ```bash
 qemu-img create -f raw disk/rweezy.img 512M
