@@ -7,6 +7,7 @@
  * kernel build string.
  */
 
+#include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/proc_fs.h>
@@ -44,7 +45,7 @@ static int __init rweezy_init(void)
 	return 0;
 }
 
-module_init(rweezy_init);
+fs_initcall(rweezy_init);
 
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("Rweezy OS kernel identity interface");

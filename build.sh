@@ -62,8 +62,8 @@ bootstrap_linux() {
       fi
     fi
 
-    if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
-      cp "$ROOT/src/linux/localversion-rweezy" "$KERNEL/localversion-rweezy"
+    if [ ! -f "$KERNEL/localversion-rweezy" ]; then
+      echo "-rweezy" > "$KERNEL/localversion-rweezy"
     fi
     if [ -f "$KERNEL/.config" ]; then
       (cd "$KERNEL" && make olddefconfig)
@@ -83,11 +83,6 @@ bootstrap_linux() {
   local extracted="$(tar -tf "$tarball" | head -n 1 | cut -d/ -f1)"
   mv "$ROOT/src/$extracted" "$KERNEL"
 
-  if [ -f "$ROOT/kernel/rweezy.config" ]; then
-    cp "$ROOT/kernel/rweezy.config" "$KERNEL/.config"
-    (cd "$KERNEL" && make olddefconfig)
-  fi
-
   if [ -f "$ROOT/kernel/rweezy.patch" ]; then
     patch -p1 -d "$KERNEL" < "$ROOT/kernel/rweezy.patch" || \
     echo "[bootstrap] WARNING: Patch application failed, continuing with manual adjustments..."
@@ -103,8 +98,13 @@ bootstrap_linux() {
     fi
   fi
 
-  if [ -f "$ROOT/src/linux/localversion-rweezy" ] && [ ! -f "$KERNEL/localversion-rweezy" ]; then
-    cp "$ROOT/src/linux/localversion-rweezy" "$KERNEL/localversion-rweezy"
+  if [ -f "$ROOT/kernel/rweezy.config" ]; then
+    cp "$ROOT/kernel/rweezy.config" "$KERNEL/.config"
+    (cd "$KERNEL" && make olddefconfig)
+  fi
+
+  if [ ! -f "$KERNEL/localversion-rweezy" ]; then
+    echo "-rweezy" > "$KERNEL/localversion-rweezy"
   fi
 }
 
@@ -126,6 +126,7 @@ bootstrap_busybox() {
   mv "$ROOT/src/$extracted" "$BUSYBOX"
 
   (cd "$BUSYBOX" && make defconfig >/dev/null)
+  sed -i 's/^CONFIG_TC=y/# CONFIG_TC is not set/' "$BUSYBOX/.config"
   if [ -f "$BUSYBOX/scripts/config" ]; then
     (cd "$BUSYBOX" && scripts/config --enable STATIC >/dev/null)
   else
@@ -147,22 +148,22 @@ if [ ! -d "$ROOTFS" ]; then
 fi
 
 echo
-echo "[1/5] Building Linux kernel..."
+echo "[1/6] Building Linux kernel..."
 cd "$KERNEL"
 make -j"$(nproc)"
 cp arch/x86/boot/bzImage "$BUILD/vmlinuz"
 
 echo
-echo "[2/5] Building BusyBox..."
+echo "[2/6] Building BusyBox..."
 cd "$BUSYBOX"
 make -j"$(nproc)"
 
 echo
-echo "[3/5] Preparing root filesystem..."
+echo "[3/6] Preparing root filesystem..."
 make CONFIG_PREFIX="$ROOTFS" install
 
 echo
-echo "[4/5] Preparing initramfs..."
+echo "[4/6] Preparing initramfs..."
 
 # Clean previously generated initramfs
 rm -rf "$INITRAMFS_BUILD"
@@ -187,11 +188,21 @@ cp "$INITRAMFS_SRC/init" "$INITRAMFS_BUILD/init"
 chmod +x "$INITRAMFS_BUILD/init"
 
 echo
-echo "[5/5] Creating initramfs..."
+echo "[5/6] Creating initramfs..."
 
 cd "$INITRAMFS_BUILD"
 
 find . -print0 | cpio --null -ov --format=newc | gzip -9 > "$BUILD/initramfs.cpio.gz"
+
+echo
+echo "[6/6] Creating disk image..."
+
+DISK_DIR="$ROOT/disk"
+DISK_IMG="$DISK_DIR/rweezy.img"
+
+mkdir -p "$DISK_DIR"
+truncate -s 512M "$DISK_IMG"
+mkfs.ext4 -L RWEEZY -F -d "$ROOTFS" "$DISK_IMG"
 
 echo
 echo "================================"
@@ -205,6 +216,10 @@ ls -lh "$BUILD/vmlinuz"
 echo
 echo "Initramfs:"
 ls -lh "$BUILD/initramfs.cpio.gz"
+
+echo
+echo "Disk Image:"
+ls -lh "$DISK_IMG"
 
 echo
 echo "Rweezy build finished successfully!"

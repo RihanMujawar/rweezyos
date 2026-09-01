@@ -37,15 +37,16 @@ chmod +x build.sh
 ./build.sh
 ```
 
-This runs five steps:
+This runs six steps:
 
 | Step | Description |
 |------|-------------|
-| 1/5 | Compiles the Linux kernel and copies `bzImage` to `build/vmlinuz` |
-| 2/5 | Compiles BusyBox |
-| 3/5 | Installs BusyBox into the root filesystem |
-| 4/5 | Prepares the initramfs staging tree with required symlinks |
-| 5/5 | Creates the compressed initramfs (`build/initramfs.cpio.gz`) |
+| 1/6 | Compiles the Linux kernel and copies `bzImage` to `build/vmlinuz` |
+| 2/6 | Compiles BusyBox |
+| 3/6 | Installs BusyBox into the root filesystem |
+| 4/6 | Prepares the initramfs staging tree with required symlinks |
+| 5/6 | Creates the compressed initramfs (`build/initramfs.cpio.gz`) |
+| 6/6 | Creates and populates the ext4 disk image (`disk/rweezy.img`) |
 
 ### 3. Boot in QEMU
 
